@@ -1,6 +1,9 @@
 #!/usr/bin/perl
 
 # This script gets you the external IP address whenever it gets changed.
+# NOTE: You will need the following packages to run this script:
+# * libexpect-perl
+# * lynx-cur
 
 use strict;
 use warnings;
