@@ -8,7 +8,7 @@ import time
 import re
 import os
 
-path = os.path.dirname(os.path.abspath(__file__))
+path = os.path.dirname(os.path.realpath(__file__))
 salaahTimes = {
     "fajr":"",
     "dhuhur":"",
