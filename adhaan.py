@@ -58,8 +58,6 @@ def getSalaahTimes():
 ##
 # Main function.
 #
-# TODO: Find a way of stopping main() after isha and starting it at fajr
-#
 def main():
     getSalaahTimes()
     while (True):
