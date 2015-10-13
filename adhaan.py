@@ -61,6 +61,7 @@ def getSalaahTimes():
 # TODO: Find a way of stopping main() after isha and starting it at fajr
 #
 def main():
+    getSalaahTimes()
     while (True):
         currentTime = time.strftime("%H:%M")
         if (currentTime == salaahTimes["fajr"]):
