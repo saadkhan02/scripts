@@ -77,24 +77,28 @@ sub main()
         print("Please provide an email address. Use --email\n");
     }
     else {
-        my $oldIP = undef;
-        my $IP = getIP();
+        while (1) {
+            my $oldIP = undef;
+            my $IP = getIP();
 
-        if ($IP) {
-            # If the record does'nt exist, create it.
-            if (!-e IP_RECORD) {
-                updateFileAndSendEmail($IP, $emailAddress, $verbose);
-            }
-            # If record exists, compare with the old one and update if needed.
-            else {
-                open(FILE, IP_RECORD);
-                $oldIP = <FILE>;
-                close(FILE);
-
-                if ($oldIP ne $IP) {
+            if ($IP) {
+                # If the record does'nt exist, create it.
+                if (!-e IP_RECORD) {
                     updateFileAndSendEmail($IP, $emailAddress, $verbose);
                 }
+                # If record exists, compare with the old one and update if needed.
+                else {
+                    open(FILE, IP_RECORD);
+                    $oldIP = <FILE>;
+                    close(FILE);
+
+                    if ($oldIP ne $IP) {
+                        updateFileAndSendEmail($IP, $emailAddress, $verbose);
+                    }
+                }
             }
+
+            sleep(3600);
         }
     }
 }
