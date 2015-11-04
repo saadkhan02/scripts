@@ -1,22 +1,22 @@
 #!/usr/bin/perl
 
 # This script gets you the external IP address whenever it gets changed.
-# NOTE: You will need the following packages to run this script:
-# * libexpect-perl
-# * lynx-cur
 
 use strict;
 use warnings;
 use diagnostics;
 
-use Expect;
-use Data::Dumper;
+use Getopt::Long;
 
 use constant {
     TIMEOUT_S => 10,
     PROMPT => "\$ ",
-    IP_RECORD => "/tmp/ipRecord"
+    IP_RECORD => "/tmp/IPRecord",
+    NEW_IP_RECORD => "/tmp/newIPRecord"
 };
+
+my $emailAddress;
+my $verbose;
 
 ##
 # Gets the external IP address.
@@ -26,40 +26,77 @@ use constant {
 #
 sub getIP()
 {
-    my $expect = new Expect;
-    $expect->log_stdout(0);
-
     my $IP = undef;
 
-    $expect->spawn("/bin/bash");
-    $expect->expect(TIMEOUT_S, PROMPT);
-    $expect->send("lynx --dump http://ipecho.net/plain\n");
-    $expect->expect(TIMEOUT_S, PROMPT);
-    my $result = $expect->before();
-    $result =~ /([0-9]*[\.][0-9]*[\.][0-9]*[\.][0-9]*)/;
-    $IP = $1;
+    system("curl http://ipecho.net/plain > " . NEW_IP_RECORD);
+#    $result =~ /([0-9]*[\.][0-9]*[\.][0-9]*[\.][0-9]*)/;
+    open(FILE, NEW_IP_RECORD);
+    $IP = <FILE>;
+    close(FILE);
+
+    unlink(NEW_IP_RECORD);
 
     return $IP;
 }
 
 ##
-# Checks whether the IP address has changed from the time we checked earlier.
+# Update IP file and send email.
 #
-# @param IP Current IP address of the machine.
+# @param IP External IP address of the network.
+# @param emailAddress Email address which needs to be notified of the change.
+# @param verbose Whether or not the display needs to be verbose.
 #
-# @return 1 IP has not changed.
-# @return 0 IP has changed.
-#
-sub checkEarlierIP($)
+sub updateFileAndSendEmail($$$)
 {
-    my ($IP) = @_;
+    my ($IP, $emailAddress, $verbose) = @_;
 
-    my $returnCode = 1;
+    # Update or make the IP record file.
+    open(WRITE_TO_FILE, ">", IP_RECORD);
+    print(WRITE_TO_FILE $IP);
+    close(WRITE_TO_FILE);
 
-    if (-e IP_RECORD) {
-        newRecord($IP);
+    # Send email.
+    system("cat " . IP_RECORD .
+           " | mail -s \"New IP address\" ${emailAddress}");
+
+    if ($verbose) {
+        print("The new IP address is ${IP}\n");
     }
 }
 
+##
+# Main function.
+#
+sub main()
+{
 
-print Dumper getIP();
+    GetOptions("email:s" => \$emailAddress,
+               "verbose" => \$verbose);
+
+    if (!$emailAddress) {
+        print("Please provide an email address. Use --email\n");
+    }
+    else {
+        my $oldIP = undef;
+        my $IP = getIP();
+
+        if ($IP) {
+            # If the record does'nt exist, create it.
+            if (!-e IP_RECORD) {
+                updateFileAndSendEmail($IP, $emailAddress, $verbose);
+            }
+            # If record exists, compare with the old one and update if needed.
+            else {
+                open(FILE, IP_RECORD);
+                $oldIP = <FILE>;
+                close(FILE);
+
+                if ($oldIP ne $IP) {
+                    updateFileAndSendEmail($IP, $emailAddress, $verbose);
+                }
+            }
+        }
+    }
+}
+
+main();
